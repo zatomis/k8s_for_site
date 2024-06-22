@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-django
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: django-deployment
+  template:
+    metadata:
+      labels:
+        app: django-deployment
+    spec:
+      containers:
+      - image: django_app
+        imagePullPolicy: Never
+        name: django-devman-image
+        envFrom:
+        - secretRef:
+            name: my-secret
+        ports:
+        - containerPort: 80
+          protocol: TCP
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: deployment-django
+  namespace: default
+spec:
+  clusterIP: 10.107.32.59
+  clusterIPs:
+  - 10.107.32.59
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - nodePort: 32056
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: django-deployment
+  sessionAffinity: None
+  type: NodePort
