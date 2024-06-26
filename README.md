@@ -108,3 +108,4 @@ kubectl apply -f deploy-django.yaml
 kubectl create secret generic my-secret --from-env-file=.env
 ```
 
+
