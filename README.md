@@ -107,5 +107,9 @@ kubectl apply -f deploy-django.yaml
 ```sh
 kubectl create secret generic my-secret --from-env-file=.env
 ```
+Для выполнения миграций уже существующего деплоя используйте следующие инструкции:
+```sh
+kubectl apply -f migrate.yaml  
+```
 
 

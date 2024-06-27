@@ -69,6 +69,8 @@ metadata:
   name: job-clear-session
 spec:
   schedule: "0 0 * * MON"
+  startingDeadlineSeconds: 200
+ # ttlSecondsAfterFinished: 100
   jobTemplate:
     spec:
       template:
