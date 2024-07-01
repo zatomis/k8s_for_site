@@ -94,22 +94,168 @@ $ docker compose build web
 minikube image load django_app:latest
 ```
 
-Проверить список образов к8s можно используя команду
+#### Проверить список образов к8s можно используя команду
 ```sh
 minikube image ls --format=table
 ```
 
-Из загруженного образа в k8s нужно сделать deploy. Делать это через команду
+#### Из загруженного образа в k8s нужно сделать deploy. Делать это через команду
 ```sh
 kubectl apply -f deploy-django.yaml 
 ```
-Дополнительно создаем раздел секретов для работы приложения из файла `.env` 
+#### Дополнительно создаем раздел секретов для работы приложения из файла `.env` 
 ```sh
 kubectl create secret generic my-secret --from-env-file=.env
 ```
-Для выполнения миграций уже существующего деплоя используйте следующие инструкции:
+#### Для выполнения миграций уже существующего деплоя - используйте следующий скрипт:
 ```sh
 kubectl apply -f migrate.yaml  
 ```
+#### Настройка и использование PostgreSQL в K8S
+1. Создаем ресурс содержащий данные, которые используются в процессе развертывания.
+СonfigMap. Подробнее про такой тип ресурса можно почитать [тут.](https://matthewpalmer.net/kubernetes-app-developer/articles/ultimate-configmap-guide-kubernetes.html)
+С собержанием:
+```sh
+#Имя файла - postgres-configmap-01.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  labels:
+    app: postgres
+data:
+  #в нашем случае, как пример
+  POSTGRES_DB: test_k8s
+  POSTGRES_USER: test_k8s
+  POSTGRES_PASSWORD: OwOtBep9Frut
+```
+ Сохраняем и запускаем его :
+```sh
+kubectl apply -f postgres-configmap-01.yaml
+```
 
+2. Создание тома постоянного хранилища данных для postgres размером 3Gb
+```sh
+#Create and Apply Persistent Storage Volume and Persistent Volume Claim
+#Имя файла - postgres-storage-02.yaml
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: postgres-pv-volume
+  labels:
+    type: local
+    app: postgres
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 3Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/home/zatomis/pg_data" <- укажите свой актуальный путь
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-pv-claim
+  labels:
+    app: postgres
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 3Gi
+```
+Сохраняем и запускаем его :
+```sh
+kubectl apply -f postgres-storage-02.yaml
+```
 
+3. Создание и развертывания PostgreSQL. Пример версии 14.1
+```sh
+#Create and Apply PostgreSQL Deployment
+#The deployment file contains configuration of the PostgreSQL deployment and provides specifications
+#for the containers and volumes:
+#Имя файла - postgres-deployment-03.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:14.1
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+```
+Сохраняем и запускаем его :
+```sh
+kubectl apply -f postgres-deployment-03.yaml
+```
+
+4. Создание службы PostgreSQL 
+```sh
+#Create and Apply PostgreSQL Service. Specify the service type and ports. 
+#Имя файла - postgres-deployment-03.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  type: NodePort
+  ports:
+   - port: 5432
+  selector:
+   app: postgres
+```
+Сохраняем и запускаем его :
+```sh
+kubectl apply -f postgres-service-04.yaml
+```
+5. Как подключиться к PostgreSQL
+Воспользуйтесь командой для отображения всех созданных вами сервисов
+```sh
+kubectl get all
+```
+![img.png](img.png)
+Нас будет интересовать номер пода PostgreSQL и ip адрес 
+```sh
+kubectl exec -it postgres-6f9f647bb9-7q8dg --  psql -h localhost -U test_k8s --password -p 5432 test_k8s
+```
+Для того чтобы всё запустить - необходимо в файле `.env` прописать ip адрес подключения к PostgreSQL
+`DATABASE_URL=postgres://test_k8s:OwOtBep9Frut@10.109.136.234:5432/test_k8s`
+После необходимо сделать миграцию и добавить пользователя
+
+## Как установить сайт в локальной сети
+Измените ваш локальный файл [hosts](https://help.reg.ru/support/dns-servery-i-nastroyka-zony/rabota-s-dns-serverami/fayl-hosts-gde-nakhoditsya-i-kak-yego-izmenit#0)
+![img_1.png](img_1.png)
+
+ip адрес Minikube можно получить командой
+```sh
+minikube ip 
+```
+Рабочий вариант сайта будет по адресу http://star-burger.test/ 

@@ -1,0 +1,13 @@
+#The most important part of the file is the data section, where you provide a name
+# for the database, the username, and the password for logging into the PostgreSQL instance
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  labels:
+    app: postgres
+data:
+  POSTGRES_DB: test_k8s
+  POSTGRES_USER: test_k8s
+  POSTGRES_PASSWORD: OwOtBep9Frut
+  
