@@ -11,7 +11,7 @@
 
 ## Переменные окружения
 
-Образ с Django считывает настройки из переменных окружения. Создайте файл .env
+При создании образа используйте файл `.env` для добавления переменных окружения. Образ с Django считывает настройки из переменных окружения. Создайте файл `.env`
 `SECRET_KEY` -- обязательная секретная настройка Django. Это соль для генерации хэшей. Значение может быть любым, важно лишь, чтобы оно никому не было известно. [Документация Django](https://docs.djangoproject.com/en/3.2/ref/settings/#secret-key).
 `DEBUG` -- настройка Django для включения отладочного режима. Принимает значения `TRUE` или `FALSE`. [Документация Django](https://docs.djangoproject.com/en/3.2/ref/settings/#std:setting-DEBUG).
 `ALLOWED_HOSTS` -- настройка Django со списком разрешённых адресов. Если запрос прилетит на другой адрес, то сайт ответит ошибкой 400. Можно перечислить несколько адресов через запятую, например `127.0.0.1,192.168.0.1,site.test`. [Документация Django](https://docs.djangoproject.com/en/3.2/ref/settings/#allowed-hosts).
@@ -22,7 +22,6 @@
 ``` shell
 docker builder prune
 ```
-
 Затем собрать образ из файла docker-compose.yaml
 При сборке потянет файл Dockerfile из папки `backend_main_django`
 Необходимо в этой же папке создать файл .env с описанием переменных окружения 
@@ -85,11 +84,13 @@ $ docker compose build web
 Аналогичным образом можно удалять библиотеки из зависимостей.
 <a name="env-variables"></a>
 
-## Как установить Minikube
-Установите [Minikube](https://kubernetes.io/ru/docs/tasks/tools/install-minikube/)
+## Запуск образа в Minikube
+Установите [Minikube](https://kubernetes.io/ru/docs/tasks/tools/install-minikube/).
+Все файлы для установки содержатся в папке 
+[Deploy_k8s](Deploy_k8s)
 
 ## Развернуть сайт в Minikube
-Созданный образ докер добавить в к8s
+Созданный ранее образ докер добавляем в к8s
 ```sh
 minikube image load django_app:latest
 ```
@@ -116,7 +117,7 @@ kubectl apply -f migrate.yaml
 СonfigMap. Подробнее про такой тип ресурса можно почитать [тут.](https://matthewpalmer.net/kubernetes-app-developer/articles/ultimate-configmap-guide-kubernetes.html)
 С собержанием:
 ```sh
-#Имя файла - postgres-configmap-01.yaml
+#Имя файла - 1-postgres-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -131,13 +132,13 @@ data:
 ```
  Сохраняем и запускаем его :
 ```sh
-kubectl apply -f postgres-configmap-01.yaml
+kubectl apply -f 1-postgres-configmap.yaml
 ```
 
 2. Создание тома постоянного хранилища данных для postgres размером 3Gb
 ```sh
 #Create and Apply Persistent Storage Volume and Persistent Volume Claim
-#Имя файла - postgres-storage-02.yaml
+#Имя файла - 2-postgres-storage.yaml
 kind: PersistentVolume
 apiVersion: v1
 metadata:
@@ -170,7 +171,7 @@ spec:
 ```
 Сохраняем и запускаем его :
 ```sh
-kubectl apply -f postgres-storage-02.yaml
+kubectl apply -f 2-postgres-storage.yaml
 ```
 
 3. Создание и развертывания PostgreSQL. Пример версии 14.1
@@ -178,7 +179,7 @@ kubectl apply -f postgres-storage-02.yaml
 #Create and Apply PostgreSQL Deployment
 #The deployment file contains configuration of the PostgreSQL deployment and provides specifications
 #for the containers and volumes:
-#Имя файла - postgres-deployment-03.yaml
+#Имя файла - 3-postgres-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -212,13 +213,13 @@ spec:
 ```
 Сохраняем и запускаем его :
 ```sh
-kubectl apply -f postgres-deployment-03.yaml
+kubectl apply -f 3-postgres-deployment.yaml
 ```
 
 4. Создание службы PostgreSQL 
 ```sh
 #Create and Apply PostgreSQL Service. Specify the service type and ports. 
-#Имя файла - postgres-deployment-03.yaml
+#Имя файла - 3-postgres-deployment.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -234,7 +235,7 @@ spec:
 ```
 Сохраняем и запускаем его :
 ```sh
-kubectl apply -f postgres-service-04.yaml
+kubectl apply -f 4-postgres-service.yaml
 ```
 5. Как подключиться к PostgreSQL
 Воспользуйтесь командой для отображения всех созданных вами сервисов
@@ -258,4 +259,4 @@ ip адрес Minikube можно получить командой
 ```sh
 minikube ip 
 ```
-Рабочий вариант сайта будет по адресу http://star-burger.test/ 
+Рабочий вариант сайта будет доступен у вас локально по адресу http://star-burger.test/ 
