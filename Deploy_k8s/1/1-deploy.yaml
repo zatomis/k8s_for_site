@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-django
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: django-deployment
+  template:
+    metadata:
+      labels:
+        app: django-deployment
+    spec:
+      containers:
+      - image: django_app
+        imagePullPolicy: Never
+        name: django-devman-image
+        envFrom:
+        - secretRef:
+            name: my-secret
+        ports:
+        - containerPort: 80
+          protocol: TCP
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always

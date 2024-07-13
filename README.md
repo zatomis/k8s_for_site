@@ -100,11 +100,20 @@ minikube image load django_app:latest
 minikube image ls --format=table
 ```
 
-#### Из загруженного образа в k8s нужно сделать deploy. Делать это через команду
+#### Из загруженного образа в k8s нужно сделать deploy. Делать это через команды
 ```sh
-kubectl apply -f deploy-django.yaml 
+kubectl apply -f 1-deploy.yaml 
 ```
-#### Дополнительно создаем раздел секретов для работы приложения из файла `.env` 
+```sh
+kubectl apply -f 2-nodePort.yaml 
+```
+```sh
+kubectl apply -f 3-ingress.yaml 
+```
+```sh
+kubectl apply -f 4-cronJob.yaml 
+```
+#### Дополнительно создаем раздел секретов для работы приложения из существующего файла `.env` 
 ```sh
 kubectl create secret generic my-secret --from-env-file=.env
 ```
